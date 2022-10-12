@@ -6,6 +6,11 @@ spring:
     url: jdbc:mysql://localhost:3307/shiro?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=UTC
     username: root
     password: password
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+shiro:
+  loginUrl: /myController/login
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
