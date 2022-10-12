@@ -6,7 +6,7 @@
  * Describe:
  */
 
-package com.shentu.study.controller;
+package com.sifan.study.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
