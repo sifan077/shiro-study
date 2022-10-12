@@ -11,7 +11,10 @@ package com.shentu.study;
 
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.AuthenticationToken;
+import org.apache.shiro.authc.IncorrectCredentialsException;
+import org.apache.shiro.authc.UnknownAccountException;
 import org.apache.shiro.authc.UsernamePasswordToken;
+import org.apache.shiro.authz.AuthorizationException;
 import org.apache.shiro.config.IniSecurityManagerFactory;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.subject.Subject;
@@ -33,9 +36,24 @@ public class ShiroRun {
         try {
             subject.login(token);
             System.out.println("登陆成功！");
-        }catch (ArithmeticException e){
-            System.out.println("登陆失败！");
+            // 判断角色
+            boolean hasRole1 = subject.hasRole("role1");
+            System.out.println("是否拥有role1 = " + hasRole1);
+            // 判断权限
+            boolean permitted = subject.isPermitted("user:insert");
+            System.out.println("是否有user:insert权限 = " + permitted);
+            // 检查权限，如果有就通过，没有就抛异常
+            subject.checkPermission("user:select");
+
+        } catch (UnknownAccountException e) {
             e.printStackTrace();
+            System.out.println("用户不存在");
+        } catch (IncorrectCredentialsException e) {
+            e.printStackTrace();
+            System.out.println("密码错误");
+        } catch (AuthorizationException e){
+            e.printStackTrace();
+            System.out.println("权限不足");
         }
     }
 }
