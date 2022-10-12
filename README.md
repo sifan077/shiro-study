@@ -32,7 +32,7 @@
 [users]
 shentu = 123
 sifan = 456
- ```
+```
 
 测试登陆代码如下:
 
@@ -219,4 +219,271 @@ shentu = 34e3696dfc88f4c170bb2ac4ad77a095,role1,role2
 role1 = user:insert,user:select
 ```
 然后重新运行登陆案例。
-   
+
+### 5.springboot集成shiro
+
+#### 5.1 环境搭建
+
+1. 现在`pom.xml`内加入如下依赖:
+
+```xml-dtd
+ <dependency>
+            <groupId>org.apache.shiro</groupId>
+            <artifactId>shiro-spring-boot-web-starter</artifactId>
+            <version>1.9.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.28</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-boot-starter</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.22</version>
+        </dependency>
+```
+
+2. 修改springboot配置文件:
+
+```yml
+server:
+  port: 8080
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/shiro
+    username: root
+    password: password
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+shiro:
+  loginUrl: /myController/login
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+```
+
+#### 5.2 简单的登陆案例
+
+##### 创建数据库
+
+```sql
+create table user
+(
+    id   bigint auto_increment comment '编号'
+        primary key,
+    name varchar(30) null comment '用户名',
+    pwd  varchar(50) null comment '密码',
+    rid  bigint      null comment '角色编号'
+)
+    comment '用户表' charset = utf8;
+
+
+```
+
+##### 使用插件生成`User`的相关类；
+
+##### 修改serviece层，添加登陆方法；
+
+```java
+public interface UserService extends IService<User> {
+    // 用户登陆
+    User getUserInfoByName(String name);
+}
+
+@Service
+public class UserServiceImpl extends ServiceImpl<UserMapper, User>
+        implements UserService {
+
+    @Autowired
+    private UserMapper userMapper;
+
+    @Override
+    public User getUserInfoByName(String name) {
+        LambdaQueryWrapper<User> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(User::getName,name);
+        User user = userMapper.selectOne(lqw);
+        return user;
+    }
+}
+```
+
+##### 集成`AuthorizingRealm`重写自己的`MyRealm`;
+
+```java
+@Component
+public class MyRealm extends AuthorizingRealm {
+
+    @Autowired
+    private UserService userService;
+
+    // 自定义授权方法
+    @Override
+    protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principalCollection) {
+        return null;
+    }
+
+    // 自定义登陆认证方法
+    @Override
+    protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken authenticationToken) throws AuthenticationException {
+        // 1.获取用户身份信息
+        String name = authenticationToken.getPrincipal().toString();
+        // 2.调用业务层获取用户信息（数据库表中存的）
+        User user = userService.getUserInfoByName(name);
+        // 3. 非空判断下，将数据封装返回
+        if (!Objects.isNull(name)) {
+            AuthenticationInfo info = new SimpleAuthenticationInfo(
+                    authenticationToken.getPrincipal(),
+                    user.getPwd(),
+                    ByteSource.Util.bytes("sifan"),
+                    authenticationToken.getPrincipal().toString()
+
+            );
+            return info;
+        }
+        return null;
+    }
+}
+```
+
+##### 编写登陆相关的html界面:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>Shiro登陆认证</h1>
+<br>
+<form action="/myController/userLogin">
+    <div>用户名:<input type="text" name="name" value="shentu"></div>
+    <div>密码:<input type="password" name="pwd" value="123"></div>
+    <div><input type="submit" value="登陆"></div>
+</form>
+</body>
+</html>
+```
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>Shiro登陆认证后主页面</h1>
+<br>
+登陆用户为:<span th:text="${session.user}"></span>
+</body>
+</html>
+```
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>出现错误</h1>
+</body>
+</html>
+```
+
+##### 实现相关Controller
+
+```java
+@Controller
+@RequestMapping("myController")
+public class MyController {
+
+    // 跳转登陆界面
+    @GetMapping("login")
+    public String login() {
+        return "login";
+    }
+
+    @GetMapping("userLogin")
+    public String userLogin(String name, String pwd, HttpSession session) {
+        //1 获取 Subject 对象
+        Subject subject = SecurityUtils.getSubject();
+        //2 封装请求数据到 token 对象中
+        AuthenticationToken token = new
+                UsernamePasswordToken(name, pwd);
+        //3 调用 login 方法进行登录认证
+        try {
+            subject.login(token);
+            session.setAttribute("user", token.getPrincipal().toString());
+            return "main";
+        } catch (AuthenticationException e) {
+            return "error";
+        }
+    }
+}
+```
+
+##### 实现`Shiro`配置
+
+```java
+@Configuration
+public class ShiroConfig {
+
+    @Autowired
+    private MyRealm myRealm;
+
+    // 配置securityManager
+    @Bean
+    public DefaultWebSecurityManager defaultWebSecurityManager() {
+        // 1. 创建 DefaultWebSecurityManager 对象
+        DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
+        // 2. 创建加密对象，设置相关属性
+        HashedCredentialsMatcher matcher = new HashedCredentialsMatcher();
+        // 2.1 使用用md5加密
+        matcher.setHashAlgorithmName("MD5");
+        // 2.2 迭代加密的次数
+        matcher.setHashIterations(3);
+        // 3. 将加密对象存储到myRealm中
+        myRealm.setCredentialsMatcher(matcher);
+        // 4. 将myRealm存入 DefaultWebSecurityManager 对象对象中
+        securityManager.setRealm(myRealm);
+        // 5.返回
+        return securityManager;
+    }
+
+    //配置 Shiro 内置过滤器拦截范围
+    @Bean
+    public DefaultShiroFilterChainDefinition
+    shiroFilterChainDefinition() {
+        DefaultShiroFilterChainDefinition definition = new
+                DefaultShiroFilterChainDefinition();
+        //设置不认证可以访问的资源
+        definition.addPathDefinition("/myController/userLogin", "anon");
+        definition.addPathDefinition("/myController/login", "anon");
+        //设置需要进行登录认证的拦截范围
+        definition.addPathDefinition("/**", "authc");
+        return definition;
+    }
+}
+```
+
