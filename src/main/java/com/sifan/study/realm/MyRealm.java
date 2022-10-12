@@ -40,8 +40,12 @@ public class MyRealm extends AuthorizingRealm {
         // 2. 数据库内获取数据信息
         String principal = principalCollection.getPrimaryPrincipal().toString();
         List<String> roles = userService.getUserRoleInfo(principal);
+        List<String> permissions = userService.getUserPermissionInfo(roles);
+        System.out.println(roles);
+        System.out.println(permissions);
         // 3，存储角色
         info.addRoles(roles);
+        info.addStringPermissions(permissions);
 
         return info;
     }

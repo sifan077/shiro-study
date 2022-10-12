@@ -13,6 +13,10 @@ import java.util.List;
 public interface UserService extends IService<User> {
     // 用户登陆
     User getUserInfoByName(String name);
+
     //获取用户的角色信息
     List<String> getUserRoleInfo(String principal);
+
+    //获取用户的权限信息
+    List<String> getUserPermissionInfo(List<String> roles);
 }

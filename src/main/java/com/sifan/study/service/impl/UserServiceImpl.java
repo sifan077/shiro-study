@@ -34,6 +34,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public List<String> getUserRoleInfo(String principal) {
         return userMapper.getUserRoleInfoMapper(principal);
     }
+
+    @Override
+    public List<String> getUserPermissionInfo(List<String> roles) {
+        return userMapper.getUserPermissionInfoMapper(roles);
+    }
 }
 
 
