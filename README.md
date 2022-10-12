@@ -487,3 +487,72 @@ public class ShiroConfig {
 }
 ```
 
+#### 5.3 记住我功能
+
+首先给`login.html`表单添加一个复选框：
+
+```html
+<form action="/myController/userLogin">
+    <div>用户名:<input type="text" name="name" value="shentu"></div>
+    <div>密码:<input type="password" name="pwd" value="123"></div>
+    <div>记住用户: <input type="checkbox" name="rememberMe" value="true"></div>
+    <div><input type="submit" value="登陆"></div>
+</form>
+```
+
+修改登陆controller,多获取一个rememberMe,存入`AuthenticationToken`中:
+
+```java
+    @GetMapping("userLogin")
+    public String userLogin(String name, String pwd,
+                            @RequestParam(defaultValue = "false") boolean rememberMe,
+                            HttpSession session) {
+        //1 获取 Subject 对象
+        Subject subject = SecurityUtils.getSubject();
+        //2 封装请求数据到 token 对象中
+        AuthenticationToken token = new
+                UsernamePasswordToken(name, pwd, rememberMe);
+        //3 调用 login 方法进行登录认证
+        try {
+            subject.login(token);
+            session.setAttribute("user", token.getPrincipal().toString());
+            return "main";
+        } catch (AuthenticationException e) {
+            return "error";
+        }
+    }
+```
+
+修改`ShiroConfig`的内置过滤拦截器:
+
+```java
+    //配置 Shiro 内置过滤器拦截范围
+    @Bean
+    public DefaultShiroFilterChainDefinition
+    shiroFilterChainDefinition() {
+        DefaultShiroFilterChainDefinition definition = new
+                DefaultShiroFilterChainDefinition();
+        //设置不认证可以访问的资源
+        definition.addPathDefinition("/myController/userLogin", "anon");
+        definition.addPathDefinition("/myController/login", "anon");
+        //设置需要进行登录认证的拦截范围
+        definition.addPathDefinition("/**", "authc");
+        //添加存在用户的过滤器（rememberMe）
+        definition.addPathDefinition("/**", "user");
+        return definition;
+    }
+```
+
+增加一个测试`rememberMe`是否生效的`controller`:
+
+```java
+    // 登陆认证验证rememberMe
+    @GetMapping("useLoginRM")
+    public String userLogin(HttpSession session) {
+        session.setAttribute("user", "rememberMe");
+        return "main";
+    }
+```
+
+
+

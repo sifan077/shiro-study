@@ -8,6 +8,7 @@ import org.apache.shiro.subject.Subject;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpSession;
 
@@ -22,12 +23,14 @@ public class MyController {
     }
 
     @GetMapping("userLogin")
-    public String userLogin(String name, String pwd, HttpSession session) {
+    public String userLogin(String name, String pwd,
+                            @RequestParam(defaultValue = "false") boolean rememberMe,
+                            HttpSession session) {
         //1 获取 Subject 对象
         Subject subject = SecurityUtils.getSubject();
         //2 封装请求数据到 token 对象中
         AuthenticationToken token = new
-                UsernamePasswordToken(name, pwd);
+                UsernamePasswordToken(name, pwd, rememberMe);
         //3 调用 login 方法进行登录认证
         try {
             subject.login(token);
@@ -36,5 +39,12 @@ public class MyController {
         } catch (AuthenticationException e) {
             return "error";
         }
+    }
+
+    // 登陆认证验证rememberMe
+    @GetMapping("useLoginRM")
+    public String userLogin(HttpSession session) {
+        session.setAttribute("user", "rememberMe");
+        return "main";
     }
 }
