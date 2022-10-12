@@ -23,7 +23,7 @@ public class BaseController {
     @RequiresRoles("admin")
     @GetMapping("/userLoginRoles")
     public String userLoginRoles() {
-        System.out.println("登陆验证验证角色");
+//        System.out.println("登陆验证验证角色");
         return "验证角色成功";
     }
 }

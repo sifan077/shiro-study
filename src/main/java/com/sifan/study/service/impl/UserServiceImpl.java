@@ -8,6 +8,8 @@ import com.sifan.study.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * @author 思凡
  * @description 针对表【user(用户表)】的数据库操作Service实现
@@ -23,9 +25,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public User getUserInfoByName(String name) {
         LambdaQueryWrapper<User> lqw = new LambdaQueryWrapper<>();
-        lqw.eq(User::getName,name);
+        lqw.eq(User::getName, name);
         User user = userMapper.selectOne(lqw);
         return user;
+    }
+
+    @Override
+    public List<String> getUserRoleInfo(String principal) {
+        return userMapper.getUserRoleInfoMapper(principal);
     }
 }
 

@@ -22,6 +22,7 @@ import org.apache.shiro.util.ByteSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Objects;
 
 
@@ -37,9 +38,10 @@ public class MyRealm extends AuthorizingRealm {
         // 1. 创建对象，封装当前登陆用户的角色、权限信息
         SimpleAuthorizationInfo info = new SimpleAuthorizationInfo();
         // 2. 数据库内获取数据信息
-
+        String principal = principalCollection.getPrimaryPrincipal().toString();
+        List<String> roles = userService.getUserRoleInfo(principal);
         // 3，存储角色
-        info.addRole("admin");
+        info.addRoles(roles);
 
         return info;
     }
