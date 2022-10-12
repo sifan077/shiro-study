@@ -167,5 +167,56 @@ public class ShiroRun {
 
 ```
 
+### 4.自定义登陆认证
+#### 4.1 实现`AuthenticatingRealm`接口
+自定义登陆第一步，实现`AuthenticatingRealm`接口:
+```java
+public class MyRealm extends AuthenticatingRealm {
 
+    // 自定义的登陆认证方法，shiro的login方法底层会调用该类的认证方法进行认证
+    // 配置自定义的realm生效,在ini内配置，或者在springboot中配置
+    // 该方法只是获取进行对比的信息，认证逻辑还是shiro底层的逻辑完成
+
+    @Override
+    protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken authenticationToken) throws AuthenticationException {
+        // 1. 获取身份信息
+        String principal = authenticationToken.getPrincipal().toString();
+        // 2. 获取凭证信息
+        String password = new String((char[]) authenticationToken.getCredentials());
+        System.out.println("认证用户信息 " + principal + "  " + password);
+        // 3. 获取数据库中存储的用户信息
+        if (principal.equals("shentu")) {
+            // 3.1 数据库中查询出密码
+            String pwdInfo = "34e3696dfc88f4c170bb2ac4ad77a095";
+            // 4. 创建封装校验逻辑对象
+            AuthenticationInfo info = new SimpleAuthenticationInfo(
+                    authenticationToken.getPrincipal(),
+                    pwdInfo,
+                    ByteSource.Util.bytes("sifan"),
+                    authenticationToken.getPrincipal().toString()
+            );
+            // 5. 封装对象返回
+            return info;
+        }
+        return null;
+    }
+}
+
+```
+#### 4.2 修改运行的配置
+```ini
+[main]
+md5CredentialsMatcher = org.apache.shiro.authc.credential.Md5CredentialsMatcher
+md5CredentialsMatcher.hashIterations = 3
+myrealm=com.sifan.study.common.MyRealm
+myrealm.credentialsMatcher = $md5CredentialsMatcher
+securityManager.realms = $myrealm
+
+[users]
+shentu = 34e3696dfc88f4c170bb2ac4ad77a095,role1,role2
+
+[roles]
+role1 = user:insert,user:select
+```
+然后重新运行登陆案例。
    
