@@ -554,5 +554,100 @@ public class ShiroConfig {
     }
 ```
 
+#### 5.4 登出功能
+
+在`main.html`中添加退出的链接:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>Shiro登陆认证后主页面</h1>
+<br>
+登陆用户为:<span th:text="${session.user}"></span>
+<br>
+<a href="/logout">登出</a>
+</body>
+</html>
+```
+
+修改`ShiroConfig`的内置过滤拦截器:
+
+```java
+    //配置 Shiro 内置过滤器拦截范围
+    @Bean
+    public DefaultShiroFilterChainDefinition
+    shiroFilterChainDefinition() {
+        DefaultShiroFilterChainDefinition definition = new
+                DefaultShiroFilterChainDefinition();
+        //设置不认证可以访问的资源
+        definition.addPathDefinition("/myController/userLogin", "anon");
+        definition.addPathDefinition("/myController/login", "anon");
+        //配置登出过滤器
+        definition.addPathDefinition("/logout", "logout");
+        //设置需要进行登录认证的拦截范围
+        definition.addPathDefinition("/**", "authc");
+        //添加存在用户的过滤器（rememberMe）
+        definition.addPathDefinition("/**", "user");
+        return definition;
+    }
+```
+
+#### 5.5 最简单的角色验证
+
+写一个登陆验证角色的controller:
+
+```java
+    // 登陆验证验证角色
+    @RequiresRoles("admin")
+    @GetMapping("/userLoginRoles")
+    public String userLoginRoles() {
+        System.out.println("登陆验证验证角色");
+        return "验证角色成功";
+    }
+```
+
+在`main.html`中添加跳转验证的链接：
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>Shiro登陆认证后主页面</h1>
+<br>
+登陆用户为:<span th:text="${session.user}"></span>
+<br>
+<a href="/logout">登出</a><br>
+<a href="/userLoginRoles">测试授权</a><br>
+
+</body>
+</html>
+```
+
+修改`MyRealm`中的`doGetAuthorizationInfo`方法，添加假数据：
+
+```java
+   // 自定义授权方法
+    @Override
+    protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principalCollection) {
+        // 1. 创建对象，封装当前登陆用户的角色、权限信息
+        SimpleAuthorizationInfo info = new SimpleAuthorizationInfo();
+        // 2. 数据库内获取数据信息
+
+        // 3，存储角色
+        info.addRole("admin");
+
+        return info;
+    }
+```
+
 
 

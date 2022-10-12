@@ -15,6 +15,7 @@ import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
 import org.apache.shiro.authz.AuthorizationInfo;
+import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.util.ByteSource;
@@ -33,7 +34,14 @@ public class MyRealm extends AuthorizingRealm {
     // 自定义授权方法
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principalCollection) {
-        return null;
+        // 1. 创建对象，封装当前登陆用户的角色、权限信息
+        SimpleAuthorizationInfo info = new SimpleAuthorizationInfo();
+        // 2. 数据库内获取数据信息
+
+        // 3，存储角色
+        info.addRole("admin");
+
+        return info;
     }
 
     // 自定义登陆认证方法
