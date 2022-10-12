@@ -41,8 +41,6 @@ public class MyRealm extends AuthorizingRealm {
         String principal = principalCollection.getPrimaryPrincipal().toString();
         List<String> roles = userService.getUserRoleInfo(principal);
         List<String> permissions = userService.getUserPermissionInfo(roles);
-        System.out.println(roles);
-        System.out.println(permissions);
         // 3，存储角色
         info.addRoles(roles);
         info.addStringPermissions(permissions);

@@ -37,7 +37,7 @@ public class MyController {
             session.setAttribute("user", token.getPrincipal().toString());
             return "main";
         } catch (AuthenticationException e) {
-            return "error";
+            return "login_error";
         }
     }
 
