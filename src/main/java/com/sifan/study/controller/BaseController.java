@@ -8,6 +8,7 @@
 
 package com.sifan.study.controller;
 
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,7 +24,13 @@ public class BaseController {
     @RequiresRoles("admin")
     @GetMapping("/userLoginRoles")
     public String userLoginRoles() {
-//        System.out.println("登陆验证验证角色");
         return "验证角色成功";
+    }
+
+    // 登陆验证验证权限
+    @RequiresPermissions("user:delete")
+    @GetMapping("/userPermissions")
+    public String userPermissions() {
+        return "验证权限成功";
     }
 }

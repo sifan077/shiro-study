@@ -698,7 +698,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
 修改`MyRealm`的doGetAuthorizationInfo的方法：
 
-```java    // 自定义授权方法
+```java
     // 自定义授权方法
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principalCollection) {
@@ -714,7 +714,150 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 ```
 
+#### 5.7 验证权限
 
+修改`userServiece`的相关方法：
 
+```java
+@Mapper
+public interface UserMapper extends BaseMapper<User> {
+    @Select("SELECT NAME FROM role WHERE id IN (SELECT rid FROM role_user" +
+            " WHERE uid=(SELECT id FROM USER WHERE NAME =#{principal}))")
+    List<String> getUserRoleInfoMapper(@Param("principal") String
+                                               principal);
 
+    List<String> getUserPermissionInfoMapper(@Param("roles") List<String> roles);
+}
+```
+
+```java
+public interface UserService extends IService<User> {
+    // 用户登陆
+    User getUserInfoByName(String name);
+
+    //获取用户的角色信息
+    List<String> getUserRoleInfo(String principal);
+
+    //获取用户的权限信息
+    List<String> getUserPermissionInfo(List<String> roles);
+}
+```
+
+```java
+@Service
+public class UserServiceImpl extends ServiceImpl<UserMapper, User>
+        implements UserService {
+
+    @Autowired
+    private UserMapper userMapper;
+
+    @Override
+    public User getUserInfoByName(String name) {
+        LambdaQueryWrapper<User> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(User::getName, name);
+        User user = userMapper.selectOne(lqw);
+        return user;
+    }
+
+    @Override
+    public List<String> getUserRoleInfo(String principal) {
+        return userMapper.getUserRoleInfoMapper(principal);
+    }
+
+    @Override
+    public List<String> getUserPermissionInfo(List<String> roles) {
+        return userMapper.getUserPermissionInfoMapper(roles);
+    }
+}
+```
+
+配置xml:
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sifan.study.mapper.UserMapper">
+
+    <!--配置类变量与数据库表列名的映射-->
+    <resultMap id="UserMap" type="com.sifan.study.domain.User">
+        <!-- id为主键 -->
+        <id column="id" property="id"/>
+        <!-- column是数据库表的列名 , property是对应实体类的属性名 -->
+        <result column="name" property="name"/>
+        <result column="pwd" property="pwd"/>
+        <result column="rid" property="rid"/>
+    </resultMap>
+
+    <select id="getUserPermissionInfoMapper" parameterType="arraylist" resultType="string">
+        select info FROM permissions WHERE id IN (
+        SELECT pid FROM role_ps WHERE rid IN(
+        SELECT id FROM role WHERE NAME IN(
+        <foreach collection='roles' item="name" open="(" separator="," close=")">
+            #{name}
+        </foreach>
+        )
+        )
+        )
+    </select>
+</mapper>
+```
+
+配置yml:
+
+```yml
+server:
+  port: 8080
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/shiro
+    username: root
+    password: password
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+shiro:
+  loginUrl: /myController/login
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  mapper-locations: classpath:mapper/*.xml
+
+```
+
+在`main.html`中添加跳转权限测试的url
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>Shiro登陆认证后主页面</h1>
+<br>
+登陆用户为:<span th:text="${session.user}"></span>
+<br>
+<a href="/logout">登出</a><br>
+<a href="/userLoginRoles">测试角色</a><br>
+<a href="/userPermissions">测试权限</a><br>
+
+</body>
+</html>
+```
+
+添加测试权限的controller:
+
+```java
+    // 登陆验证验证权限
+    @RequiresPermissions("user:delete")
+    @GetMapping("/userPermissions")
+    public String userPermissions() {
+        return "验证权限成功";
+    }
+```
 
