@@ -49,7 +49,7 @@ public class ShiroConfig {
                 DefaultShiroFilterChainDefinition();
         //设置不认证可以访问的资源
         definition.addPathDefinition("/myController/userLogin", "anon");
-        definition.addPathDefinition("/login", "anon");
+        definition.addPathDefinition("/myController/login", "anon");
         //设置需要进行登录认证的拦截范围
         definition.addPathDefinition("/**", "authc");
         return definition;
