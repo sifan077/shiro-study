@@ -20,7 +20,6 @@ public interface UserMapper extends BaseMapper<User> {
             " WHERE uid=(SELECT id FROM USER WHERE NAME =#{principal}))")
     List<String> getUserRoleInfoMapper(@Param("principal") String
                                                principal);
-
 }
 
 

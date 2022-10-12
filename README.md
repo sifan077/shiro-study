@@ -649,5 +649,72 @@ public class ShiroConfig {
     }
 ```
 
+#### 5.6 接入数据库进行角色判断
+
+修改`userServiece`的相关方法：
+
+```java
+@Mapper
+public interface UserMapper extends BaseMapper<User> {
+    @Select("SELECT NAME FROM role WHERE id IN (SELECT rid FROM role_user" +
+            " WHERE uid=(SELECT id FROM USER WHERE NAME =#{principal}))")
+    List<String> getUserRoleInfoMapper(@Param("principal") String
+                                               principal)
+}
+```
+
+```java
+public interface UserService extends IService<User> {
+    // 用户登陆
+    User getUserInfoByName(String name);
+    //获取用户的角色信息
+    List<String> getUserRoleInfo(String principal);
+}
+
+```
+
+```java
+@Service
+public class UserServiceImpl extends ServiceImpl<UserMapper, User>
+        implements UserService {
+
+    @Autowired
+    private UserMapper userMapper;
+
+    @Override
+    public User getUserInfoByName(String name) {
+        LambdaQueryWrapper<User> lqw = new LambdaQueryWrapper<>();
+        lqw.eq(User::getName, name);
+        User user = userMapper.selectOne(lqw);
+        return user;
+    }
+
+    @Override
+    public List<String> getUserRoleInfo(String principal) {
+        return userMapper.getUserRoleInfoMapper(principal);
+    }
+}
+```
+
+修改`MyRealm`的doGetAuthorizationInfo的方法：
+
+```java    // 自定义授权方法
+    // 自定义授权方法
+    @Override
+    protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principalCollection) {
+        // 1. 创建对象，封装当前登陆用户的角色、权限信息
+        SimpleAuthorizationInfo info = new SimpleAuthorizationInfo();
+        // 2. 数据库内获取数据信息
+        String principal = principalCollection.getPrimaryPrincipal().toString();
+        List<String> roles = userService.getUserRoleInfo(principal);
+        // 3，存储角色
+        info.addRoles(roles);
+
+        return info;
+    }
+```
+
+
+
 
 
